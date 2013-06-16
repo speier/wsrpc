@@ -1,0 +1,1 @@
+@browserify -r ./wsrpc -o public/wsrpc.js
