@@ -1,74 +1,4 @@
-require=(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({"./wsrpc":[function(require,module,exports){
-module.exports=require('+ibpTF');
-},{}],"+ibpTF":[function(require,module,exports){
-var util = require('util');
-var EventEmitter = require('events').EventEmitter;
-
-var wsrpc = function() {
-    var self = this;
-
-    this.connect = function(url, openCallback) {
-        this.cbs = {};
-        this.ws = new WebSocket(url);
-        this.ws.onopen = function(e) {
-            self.emit('open', e);
-            if (openCallback) openCallback();
-        };
-        this.ws.onmessage = function(e) {
-            self.msgHandler(e)
-        };
-    }
-
-    this.init = function(ws, methods) {
-        this.ws = ws;
-        this.ws.on('message', this.msgHandler);
-        this.methods = methods || {};
-    }
-
-    this.msgHandler = function(e) {
-        var msg = e.data || e;
-        self.emit('message', msg);
-        try {
-            msg = JSON.parse(msg);
-        } catch (e) {}
-        if (msg.method) {
-            var method = self.methods[msg.method];
-            method.call(self.methods, msg.args, function(err, res) {
-                var mcb = JSON.stringify({
-                    err: err,
-                    res: res,
-                    mcb: msg.method
-                });
-                self.ws.send(mcb);
-            });
-        } else if (msg.mcb) { // method callback
-            self.cbs[msg.mcb].call(self.cbs, msg.err, msg.res);
-        } else if (msg.topic) {
-            self.emit(msg.topic, msg.message);
-        }
-    }
-
-    this.invoke = function(method, args, cb) {
-        var msg = JSON.stringify({
-            method: method,
-            args: args
-        });
-        this.cbs[method] = cb;
-        this.ws.send(msg);
-    }
-
-    this.send = function(topic, message) {
-        var msg = JSON.stringify({
-            topic: topic,
-            message: message
-        });
-        this.ws.send(msg);
-    }
-}
-
-util.inherits(wsrpc, EventEmitter);
-module.exports = new wsrpc();
-},{"util":1,"events":2}],1:[function(require,module,exports){
+require=(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -661,5 +591,99 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":3}]},{},[])
+},{"__browserify_process":3}],"./wsrpc":[function(require,module,exports){
+module.exports=require('+ibpTF');
+},{}],"+ibpTF":[function(require,module,exports){
+var util = require('util');
+var EventEmitter = require('events').EventEmitter;
+
+var proxy = require('./proxy');
+var m = require('./methods');
+
+var wsrpc = function() {
+    var self = this;
+
+    this.connect = function(url, openCallback) {
+        this.cbs = {};
+        this.ws = new WebSocket(url);
+        this.ws.onopen = function(e) {
+            self.emit('open', e);
+            if (openCallback) openCallback();
+        };
+        this.ws.onmessage = function(e) {
+            self.msgHandler(e)
+        };
+
+        proxy(m, this);
+    }
+
+    this.init = function(ws, methods) {
+        this.ws = ws;
+        this.ws.on('message', this.msgHandler);
+        this.methods = methods || {};
+    }
+
+    this.msgHandler = function(e) {
+        var msg = e.data || e;
+        self.emit('message', msg);
+        try {
+            msg = JSON.parse(msg);
+        } catch (e) {}
+        if (msg.method) {
+            var method = self.methods[msg.method];
+            method.call(self.methods, msg.args, function(err, res) {
+                var mcb = JSON.stringify({
+                    err: err,
+                    res: res,
+                    mcb: msg.method
+                });
+                self.ws.send(mcb);
+            });
+        } else if (msg.mcb) { // method callback
+            self.cbs[msg.mcb].call(self.cbs, msg.err, msg.res);
+        } else if (msg.topic) {
+            self.emit(msg.topic, msg.message);
+        }
+    }
+
+    this.invoke = function(method, args, cb) {
+        var msg = JSON.stringify({
+            method: method,
+            args: args
+        });
+        this.cbs[method] = cb;
+        this.ws.send(msg);
+    }
+
+    this.send = function(topic, message) {
+        var msg = JSON.stringify({
+            topic: topic,
+            message: message
+        });
+        this.ws.send(msg);
+    }
+}
+
+util.inherits(wsrpc, EventEmitter);
+module.exports = new wsrpc();
+},{"util":1,"events":2,"./proxy":4,"./methods":5}],4:[function(require,module,exports){
+module.exports = function(source, target) {
+  target = target || module.exports;
+
+  for (var key in source) {
+    if (typeof source[key] === 'function') {
+      target[key] = function() {
+        return source[key].apply(source, arguments);
+      }
+    }
+  }
+}
+},{}],5:[function(require,module,exports){
+module.exports = {
+  dblBalance: function(args, cb) {
+    var res = args * 2;
+    cb(null, res);
+  }
+}
+},{}]},{},[])
 ;

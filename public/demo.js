@@ -8,7 +8,7 @@ function dblBalance() {
   var balance = document.getElementById('balance').value;
 
   // ex1: client initiated async method call
-  wsrpc.invoke('dblBalance', balance, function(err, res) {
+  wsrpc.dblBalance(balance, function(err, res) {
     console.log('balance set to ' + res);
     output('Balance doubled from ' + balance + ' to ' + res);
   });

@@ -1,6 +1,9 @@
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
+var proxy = require('./proxy');
+var mforc = require('./methods'); // hack to allow proxy method names to the client-side
+
 var wsrpc = function() {
     var self = this;
 
@@ -14,6 +17,8 @@ var wsrpc = function() {
         this.ws.onmessage = function(e) {
             self.msgHandler(e)
         };
+
+        proxy(mforc, this);
     }
 
     this.init = function(ws, methods) {

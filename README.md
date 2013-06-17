@@ -1,20 +1,29 @@
-### wsrpc
+# wsrpc
 
 WebSocket powered RPC proof of concept.
 
-Usage:
+## Usage
+
+### Server:
+```
+var wsrpc = require('./wsrpc');
+
+wsrpc.init(ws, require('./methods'));
+```
+
+### Client:
 ```
 // open ws connection
 wsrpc.connect('ws://localhost:8080');
 
 // ex1: client initiated async method call
-wsrpc.invoke('setBalance', amount, function(err, res) {
+wsrpc.dblBalance(balance, function(err, res) { 
   console.log('balance set to ' + res);
 });
   
 // ex2: subscribe to a server initiated event
 wsrpc.on('newMessage', function(msg) {
-  output(msg);
+  console.log(msg);
 });
 ```
 
